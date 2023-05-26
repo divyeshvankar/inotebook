@@ -55,26 +55,63 @@ router.post(
   }
 );
 
-// Route 3 : Add the Updated note using : PUT "/api/auth/updatenote/:id" Login required
- router.put('/updatenote/:id' ,fetchuser, async (req,res)=>{
-    const {title,description,tag} =req.body;
+// Route 3 : Update the existing note using : PUT "/api/auth/updatenote/:id" Login required
+router.put("/updatenote/:id", fetchuser, async (req, res) => {
+  const { title, description, tag } = req.body;
+  try {
     // create new empty note
     const newNote = {};
 
-    if(title){newNote.title=title;}
-    if(description){newNote.description=description;}
-    if(tag){newNote.tag=tag;}
-
-
-    // find note to be updated and update it
-    let note= await Note.findById(req.params.id);
-    if(!note){return res.status(401).send("Not found")};
-    if(note.user.toString()!= req.user.id){
-        return res.status(401).send("Not authorized");
+    if (title) {
+      newNote.title = title;
+    }
+    if (description) {
+      newNote.description = description;
+    }
+    if (tag) {
+      newNote.tag = tag;
     }
 
-    note = await Note.findByIdAndUpdate(req.params.id,{$set: newNote},{new:true})
-    res.json({note});
- })
+    // find note to be updated and update it
+    let note = await Note.findById(req.params.id);
+    if (!note) {
+      return res.status(401).send("Not found");
+    }
+    // checking if same user is trying to update the note who is authenticate it and actually it is
+    if (note.user.toString() !== req.user.id) {
+      return res.status(401).send("Not authorized");
+    }
+
+    note = await Note.findByIdAndUpdate(
+      req.params.id,
+      { $set: newNote },
+      { new: true }
+    );
+    res.json({ note });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// Route 4 : delete the existing note using : DELETE "/api/auth/deletenote/:id" Login required
+router.delete("/deletenote/:id", fetchuser, async (req, res) => {
+  try {
+    // find note to be deleted and delete it
+    let note = await Note.findById(req.params.id);
+    if (!note) {
+      return res.status(401).send("Not found");
+    }
+    //    checking is same user trying to delete who is actually owner of note
+    if (note.user.toString() !== req.user.id) {
+      return res.status(401).send("Not authorized");
+    }
+    note = await Note.findByIdAndDelete(req.params.id);
+    res.json({ Success: "Note has been deleted" });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
 module.exports = router;
